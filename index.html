@@ -1,0 +1,92 @@
+<p>هوک useOptimistic هم اکنون (سوم آذر ۱۴۰۲) برای نسخه های پایدار ریکت موجود نیست. برای استفاده از این هوک ، باید نسخه های canary ریکت را استفاده کنید:</p>
+<textarea class="code" disabled>
+npm i react@18.3.0-canary-fbc9b68d6-20231123 react-dom@18.3.0-canary-fbc9b68d6-20231123
+</textarea>
+<blockquote>استفاده از این نسخه ریکت، در پروداکشن توصیه نمیشود.</blockquote>
+
+<p>شاید کاربرد هوک useOptimistic در نگاه اول عجیب و غیر منتظره بنظر بیاید و حتی شاید کسی باور نکند ریکت همچین هوکی را معرفی کرده باشد. کاربرد این هوک به زبان ساده مربوط به مواقعی است که لیستی از چیزها مثلا لیست todo، لیست کاربران و یا غیره داشته باشیم. موقعی که یکی از این آیتم ها را ویرایش میکنیم، یا قصد اضافه کردن آیتم جدیدی داشته باشیم، احتمالا دوست داشته باشیم استایل آن آیتم در حال پردازش، نسبت به  سایر آیتمهای موجود در لیست متفاوت باشد. به شکل زیر دقت کنید:</p>
+<div class="post_image">
+  <img src="/asset/image/post/37/body/view2.gif" alt="هوک useOptimistic در ریکت" />
+</div>
+<p>در شکل بالا موقعی که آیتم جدید اضافه میشود، ابتدا با استایل متاوت (در اینجا با opacity متفاوت) ظاهر میشود سپس موقعی که آیتم جدید در سرور با موفقیت ثبت شد، استایل آن مانند سایر آیتم های موجود در لیست میشود. کاربرد هوک useOptimistic دقیقا همین است.</p>
+
+<p> به کد زیر توجه کنید: </p>
+<div class="post_image">
+  <img src="/asset/image/post/37/body/code1.png" alt="هوک useOptimistic در ریکت" />
+</div>
+<p>در قطعه کد بالا پس از بارگیری لیست todos از سرور، به وسیله کامپوننت Todos برای کاربر نمایش داده میشود:</p>
+<div class="post_image">
+  <img src="/asset/image/post/37/body/code2.png" alt="هوک useOptimistic در ریکت" />
+</div>
+<p>کامپوننت Todos شامل دو بخش میشود، یکی فرم افزودن todo جدید و دیگری لیستی از todoهای موجود در لیست. اکشن مربوط به ثبت todo در سرور به صورت زیر است:</p>
+<div class="post_image">
+  <img src="/asset/image/post/37/body/code3.png" alt="هوک useOptimistic در ریکت" />
+</div>
+<p>نتیجه کار بصورت زیر است:</p>
+<div class="post_image">
+  <img src="/asset/image/post/37/body/view.gif" alt="هوک useOptimistic در ریکت" />
+</div>
+<p>همان طور که در کدها و تصویر بالا میبینید پس از ذخیره todo جدید در سرور، todo جدید به لیست اضافه میگردد. هدف از استفاده از هوک useOptimistic این است هنگامی که todo جدیدی که در حال ارسال به سرور است با استایل متفاوتی نسبت به سایر لیست نمایش داده شود. به تصویر زیر دقت کنید:</p>
+<div class="post_image">
+  <img src="/asset/image/post/37/body/view2.gif" alt="هوک useOptimistic در ریکت" />
+</div>
+<p>همان طور که در تصویر مشخص است موقع اجرای اکشن آسنکرون مربوط به افزودن todo به سرور، آن todo بصورت کمرنگتر نسبت به سایرین ظاهر میشود. این کاری است که هوک useOptimistic برای ما انجام خواهد داد. به کد زیر توجه کنید:</p>
+<textarea class="code" disabled>
+const [state,setState] = useState(['value 1','value 2']);
+
+const [optimisticState,addOptimisticState] = useOptimistic(
+    //initialState
+    state,
+    //updateFn
+    (currentState,optimisticValue)=>{
+      return [...currentState,optimisticValue]
+    };
+);
+</textarea>
+<p>هوک useOptimistic دو ورودی دریافت میکند:</p>
+<p>استیت شروع : ورودی اول این هوک، همان استیتی است که میخواهیم از آن برای ساخت optimisticState استفاده کنیم. در مثال بالا state را در نظر گرفتیم.</p>
+<p>تابع آپدیت: ورودی دوم یک تابع است. این تابع چگونگی مرج شدن مقدار جدید با استیت فعلی برای ایجاد optimisticState را مشخص میکند. این تابع دو آرگومان استیت فعلی و مقدار جدید که قرار است به optimisticState اضافه شود را مشخص میکند و optimisticState را بازگشت میدهد.</p>
+<p>هوک useOptimistic دو مقدار را برمیگرداند. اولین optimisticState است و دومی یک متد برای ارسال آیتمهای جدید به optimisticState است. موقعی که متد addOptimisticState صدا زده شود، همان تابعی که بعنوان ورودی دوم به هوک useOptimistc دادیم اجرا میشود. در حقیقت تابع آپدیت همان reducer و addOptimisticState همان dispatcher میباشد:</p>
+<textarea class="code" disabled>
+const reducer = (currentState,optimisticValue)=>[...currentState,optimisticValue];
+const [optimisticState,dispatch] = useOptimistic(state,reducer);
+</textarea>
+<p>در مثال بالا با صدا زده شدن dispatch در حقیقت reducer اجرا میشود و خروجی آن برابر با optimisticState میباشد.</p>
+<div class="post_image">
+  <img src="/asset/image/post/37/body/code4.png" alt="هوک useOptimistic در ریکت" />
+</div>
+<p>در مثال بالا هوک useOptimistic با دریافت todos، استیت جدید optimisticState   را ایجاد میکند. برای استفاده از useOptimistic کامپوننت Todos را بصورت زیر تغییر دادیم:</p>
+<div class="post_image">
+  <img src="/asset/image/post/37/body/code5.png" alt="هوک useOptimistic در ریکت" />
+</div>
+<p>
+برای نمایش لیست todos بجای todos از optimisticTodos مپ میگیریم و نمایش میدهیم.
+</p>
+<p>وقتی کاربر روی دکمه Add کلیک کند اکشن formAction اجرا میشود:</p>
+<div class="post_image">
+  <img src="/asset/image/post/37/body/code6.png" alt="هوک useOptimistic در ریکت" />
+</div>
+<p>در این تابع ابتدا optimisticTodo جدید ایجاد شده و سپس از طریع تابع addOptimisticTodos مقدار جدید را برای ایجاد optimisticTodos ارسال یا dispatch میکنیم. </p>
+<p>خروجی کار به این شکل میباشد:</p>
+<div class="post_image">
+  <img src="/asset/image/post/37/body/view3.gif" alt="هوک useOptimistic در ریکت" />
+</div>
+<p>همان طور که در تصویر مشخص است پس از اتمام تابع آسنکرون addTodoToServer مقدار اضافه شده به optimisticTodos از لیست پاک میشود. در واقع مقدار optimisticState (یا در این مثال optimisticTodos) در مواقعی که اکشن async اجرا نمیشود برابر با مقدار state اصلی میباشد. بنابراین پس از اجرای اکشن addTodoToServer باید todo جدید را به todos اضافه کنیم:</p>
+<div class="post_image">
+  <img src="/asset/image/post/37/body/code7.png" alt="هوک useOptimistic در ریکت" />
+</div>
+<blockquote>
+مقدار optimisticState در مواقعی که عملیات async انجام نمیشود برابر با state اصلی میباشد. و فقط در هنگام عملیات async مقدار اضافه شده به optimisticState نمایش داده میشود و پس از پایان عملیات مقدار جدید پاک میشود. 
+</blockquote>
+<p>خروجی کار به این شکل میشود:</p>
+<div class="post_image">
+  <img src="/asset/image/post/37/body/view4.gif" alt="هوک useOptimistic در ریکت" />
+</div>
+<p>همین طور که در تصویر مشخص است در هنگام اجرای اکشن addTodoToServer تودوی جدید هیچ تفاوتی با بقیه لیست ندارد. برای اینکه به todo درحال ثبت در سرور استایل مشخصی بدهیم، کد را به شکل زیر تغییر میدهیم:</p>
+<div class="post_image">
+  <img src="/asset/image/post/37/body/code8.png" alt="هوک useOptimistic در ریکت" />
+</div>
+<p>همان طور که در خروجی کار قابل مشاهده است با افزودن پراپرتی sending به optimisticTodo میتوانیم استایل دلخواه خود در هنگام اجرای اکشن async را روی آیتم مربوط به آن اعمال کرد:</p>
+<div class="post_image">
+  <img src="/asset/image/post/37/body/view5.gif" alt="هوک useOptimistic در ریکت" />
+</div>
